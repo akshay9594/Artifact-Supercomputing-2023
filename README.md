@@ -27,9 +27,11 @@ used one thread per core.
  - Machine with Intel processors
 
 ## Obtaining the Codes
-The codes to reproduce the results can be obtained by cloning this repository using the command-
+The codes to reproduce the results can be obtained by cloning this repository using the commands-
 ```
-git clone (repository link)
+cd $HOME or cd ~
+git clone (https://github.com/akshay9594/Artifact-Supercomputing-2023.git)
+cd Artifact-Supercomputing-2023
 ```
 This repository contains the benchmarks and codes listed below:
 
@@ -38,9 +40,10 @@ This repository contains the benchmarks and codes listed below:
 | Amgmk-v1.0  | CORAL Benchmark Codes | (https://asc.llnl.gov/coral-benchmarks)
 | UA-NPB-1.0.3  | NAS Parallel Benchmarks | (https://github.com/akshay9594/SNU_NPB-1.0.3)
 
-## Directory Tree and Code Description
+## Directory Tree and Code Descriptions
 The directory layout of this Artifact is as follows-
 
+```bash
 ├── Artifact-Supercomputing-2023
 │   ├── amgmk-v1.0
 │   │   ├── Baselines
@@ -53,15 +56,17 @@ The directory layout of this Artifact is as follows-
 │   │   │   ├── Serial
 │   │   └── Technique_Applied
 └── README.md
-
+```
 ### Baseline and Optimized Codes
 The experiments have two Baselines against which performance improvement is measured:
- - 1. Serial Code
- - 2. Cetus Parallelized code (without subscripted subscript analysis applied)
+ - Serial Code
+ - Cetus Parallelized code (without subscripted subscript analysis applied)
 
 ***The serial baseline codes have been placed in the "Serial" directory
 and the Cetus parallelized codes (without subscripted subscript analysis applied) have 
 been placed in the "Cetus-Output-WithoutSubSub" directory.***
 
-***The Cetus parallelized code with subscripted subscript analysis applied has been
-placed in the "Technique_Applied" directory.***
+***The Cetus parallelized code with subscripted subscript analysis (Optimized codes) 
+applied has been placed in the "Technique_Applied" directory.***
+
+### Compiling and Running the Codes
