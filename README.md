@@ -22,6 +22,7 @@ used one thread per core.
  - GNU C Compiler (GCC) v4.8.5 and above
  - Python v3.8.0 and above
  - OpenMP v4.0 and above
+ - Linux (OS tested with : CentOS v7.4, Ubuntu v21.04)
 
 ### Hardware
  - Machine with Intel processors
@@ -39,6 +40,14 @@ This repository contains the benchmarks and codes listed below:
 | ------------- | ------------- | ------------- |
 | Amgmk-v1.0  | CORAL Benchmark Codes | (https://asc.llnl.gov/coral-benchmarks)
 | UA-NPB-1.0.3  | NAS Parallel Benchmarks | (https://github.com/akshay9594/SNU_NPB-1.0.3)
+
+Optionally we have included a Cetus submodule which can be used to translate source codes
+for sanity checks. To install the Cetus submodule after clonin this repo, run the 
+following command from the root of the repository:
+
+```
+git submodule update --init
+```
 
 ## Directory Tree and Code Descriptions
 The directory layout of this Artifact is as follows-
@@ -70,3 +79,22 @@ been placed in the "Cetus-Output-WithoutSubSub" directory.***
 applied has been placed in the "Technique_Applied" directory.***
 
 ### Compiling and Running the Codes
+
+#### Executing the codes in the directory amgmk-v1.0:
+
+Directories with the source codes:
+ 1. Subdirectories "Serial" and "Cetus-Output-WithoutSubSub" within Baselines
+ 2. Subdirectory Technique_Applied
+
+Within each parent subdirectories mentioned above the codes have been 
+arranged within each of the below mentioned child subdirectories named
+after the inputs used for the experiement and mentioned in the Supercomputing
+paper:
+
+ - MATRIX1
+ - MATRIX2
+ - MATRIX3
+ - MATRIX4
+ - MATRIX5
+
+
