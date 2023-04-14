@@ -1,0 +1,2 @@
+(a) For the Application:->Average baseline application execution time=6.626176s->Average application execution time of Cetus Parallelized Code (with technique applied)=4.982157s->Application Speedup=1.329981371522415
+(b) For the kernel:->Average baseline kernel execution time=3.647907s->Average kernel execution time of Cetus Parallelized Code (with technique applied)=1.966739s->Kernel Speedup=1.8547997471957387->Cores used=8

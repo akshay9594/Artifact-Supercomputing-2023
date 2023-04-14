@@ -1,4 +1,6 @@
-import matplotlib
+import matplotlib.pylab as plt
+
+import pandas as pd
 
 from subprocess import Popen,PIPE
 
@@ -12,6 +14,18 @@ print("\t\t>Artifact execution for reproducing the results<")
 print("\n*************************************************************************\n")
 
 
+
+def plot_data(plot_data_dict, plot_title):
+    plot_data_list = plot_data_dict.items()
+    plot_data_list = sorted(plot_data_list) 
+    x, y = zip(*plot_data_list) 
+
+    plt.bar(x, y)
+    plt.xlabel('Input Matrices')
+    plt.ylabel('Performance Improvement')
+    plt.title(plot_title)          
+    plt.show()
+    
 def compile_amgmk(base_path):
     os.chdir(base_path)
     make_result = Popen('make',stdout=PIPE,stderr=PIPE)
@@ -22,8 +36,6 @@ def compile_amgmk(base_path):
     if(('error:' in output) or ('error:' in error)):
         print("Compilation failed...")
         exit()
-    else:
-        print("Compilation successfull...")
     return
 
 
@@ -45,6 +57,8 @@ def compile_UA(baseline,base_path,input_class):
 
     if(('error:' in output) or ('error:' in error)):
         print("Compilation failed...")
+        print(output)
+        print(error)
         exit()
     return
 
@@ -131,27 +145,33 @@ def select_baseline():
 
 
 #Running the experiment with amgmk benchmark
-def run_exp_amgmk(base_path,opt_code_path,iters):
+def run_exp_amgmk(base_path,opt_code_path,iters,f):
 
-    print("\nCompiling and Running the baseline code", iters,"times and displaying the execution time...") 
+    #Compile the baseline code
     compile_amgmk(base_path)
+    #Execute the baseline code
     app_time,loop_time,cores = execute_amgmk(iters)
       
-    print("\nCompiling and Running the optimized code", iters,"times and displaying the execution time...") 
+    #Compile the optimized code
     compile_amgmk(opt_code_path)
+    #Execute the optimized code
     opt_app_time,opt_loop_time,cores = execute_amgmk(iters)
 
-    print("\n----------------------Timing Results for the application--------------------------\n")
-    print("->Average baseline application execution time=", app_time, " s")
-    print("->Average application execution time of Cetus Parallelized Code (with technique applied)=", opt_app_time, " s")
-    print("->Application Speedup=",app_time/opt_app_time)
-    print("->Cores used=",cores)
+    #Write the absolute numbers to the output text file
+    f.write("(a) For the Application:\n")
+    f.write("->Average baseline application execution time="+ str(app_time)+" s\n")
+    f.write("->Average application execution time of Cetus Parallelized Code (with technique applied)="+ str(opt_app_time)+ " s\n")
+    app_speedup = app_time/opt_app_time
+    f.write("->Application Speedup="+str(app_speedup)+"\n")
+    
+    f.write("\n(b) For the kernel:\n")
+    f.write("->Average baseline kernel execution time="+ str(loop_time)+ " s\n")    
+    f.write("->Average kernel execution time of Cetus Parallelized Code (with technique applied)="+str(opt_loop_time)+" s\n")
+    knl_speedup = loop_time/opt_loop_time
+    f.write("->Kernel Speedup=" + str(knl_speedup)+"\n")
+    f.write("->Cores used=" + str(cores)+"\n")
 
-    print("\n------------Timing Results for the Matrix-Vector Multiplication kernel-------------\n")
-    print("->Average baseline kernel execution time=", loop_time, " s")    
-    print("->Average kernel execution time of Cetus Parallelized Code (with technique applied)=", opt_loop_time, " s")
-    print("->Kernel Speedup=",loop_time/opt_loop_time)
-    print("->Cores used=",cores)
+    return app_speedup,knl_speedup
 
 
 #Running the experiment with the UA benchmark
@@ -195,42 +215,97 @@ def run_exp_UA(baseline,base_path,opt_code_path,input_class,iters):
     Popen(['make','clean'],stdout=PIPE,stderr=PIPE)
 
 
+
+
+
+
+#Main code
+#Step 1: Select the benchmark to be evaluated
 val = input("\t1. amgmk-v1.0\n\t2. UA-NAS\n\t->Select the benchmark you want to test by entering the number:\n")
 
+#If amgmk-v1.0 selected for evaluation
 if(val == '1'):
     print("{amgmk-v1.0 selected for evaluation}\n")
     input_matrix = ''
+    #Step 2: Choose the baseline
     baseline = select_baseline()
-    ans = input("\t->Do you want to run the experiment for all input matrices?yes or no\n")
     base_path = ''
     root = os.getcwd()
+
+    #Set the path to the Baseline source codes
+    if(baseline == '1'):
+        base_path = root+'/amgmk-v1.0/Baselines/Serial/'
+            
+    elif(baseline == '2'):
+        base_path = root+'/amgmk-v1.0/Baselines/Cetus-Output-WithoutSubSub/'
+
     opt_code_path = root+'/amgmk-v1.0/Technique_Applied/'
 
-    if(ans == 'yes'):
-        for i in range(1,6):
-            input_matrix = 'MATRIX'+ str(i)
-            print(input_matrix)
+    application_speedups = {}
+    kernel_speedups = {}
 
-    elif(ans == 'no'):
-        print("\n========================= Producing the results ===================================\n")
-        mat_num = input("->Enter the number of the matrix from 1 to 5 to use as input:")
-        input_matrix = 'MATRIX' + str(mat_num)
-        print("{Input matrix selected for experiment: ",input_matrix,"}\n")
-
-        if(baseline == '1'):
-            base_path = root+'/amgmk-v1.0/Baselines/Serial/'+input_matrix
-            
-        elif(baseline == '2'):
-            base_path = root+'/amgmk-v1.0/Baselines/Cetus-Output-WithoutSubSub/'+input_matrix
-        
-        iters = 3
-        opt_code_path += input_matrix
-        run_exp_amgmk(base_path,opt_code_path,iters)
-
-        os.chdir(root)
-    else:
-        print("Invalid Input")
+    #Step 3: Choose if you want to run 1 matrix or all matrices
+    ans = input("\t->Do you want to run the experiment for all input matrices?yes or no\n")
+    if(ans != 'yes' and ans != 'no'):
+        print("invalid input")
         exit()
+
+    #Step 4: Specify the number of application runs
+    iters = int(input("\t->Specify the number of application runs:\n"))
+    head_String = "\n=========================Timing Results for the amgmk benchmark(Average of "+ str(iters)+" runs)===============================\n\n"
+    
+    #Open a text file to write the results
+    with open('output.txt', 'w') as f:
+        f.write(head_String)
+    #If the user wants to run the experiment for all the input files
+        if(ans == 'yes'):
+            for i in range(1,6):
+                input_matrix = 'MATRIX'+ str(i)
+
+                #Set the path of the baseline codes
+                compile_path = base_path + input_matrix
+                f.write(str(i)+". For Input matrix: "+input_matrix+"\n")
+
+                #Set the path of the optimized codes
+                Technique_Applied_path = opt_code_path + input_matrix
+
+                #Run the experiment and gather the application and kernel speedups
+                app_speedup,knl_speedup = run_exp_amgmk(compile_path,Technique_Applied_path,iters,f)
+                application_speedups[input_matrix] = app_speedup
+                kernel_speedups[input_matrix] = knl_speedup
+                f.write("------------------------------------------------------------------------------------------------------\n")
+          
+           #Plot the Speedup data for the input matrices
+            if(baseline == '1'):
+                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Serial)'
+                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Serial)'
+            else:
+                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Technique NOT Applied)'
+                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Technique NOT Applied)'
+            
+            plot_data(application_speedups,plt_app_title)
+            plot_data(kernel_speedups,plt_kernel_title)
+
+            print("Experiment completed successfully! Results have been written to output.txt")
+
+    #If the user wants to run the experiment for a specific input matrix
+    #The speedup in this case is not plotted
+        elif(ans == 'no'):
+            mat_num = input("\n->Enter the number of the matrix from 1 to 5 to use as input:")
+            input_matrix = 'MATRIX' + str(mat_num)
+            print("{Input matrix selected for experiment: ",input_matrix,"}\n")
+
+            base_path += input_matrix
+            opt_code_path += input_matrix
+            app_speedup,kernel_speedup = run_exp_amgmk(base_path,opt_code_path,iters,f)
+
+            application_speedups[input_matrix] = app_speedup
+            kernel_speedups[input_matrix] = kernel_speedup
+
+            os.chdir(root)
+        else:
+            print("Invalid Input")
+            exit()
 
 elif(val == '2'):
     print("{UA-NAS selected for evaluation}")
