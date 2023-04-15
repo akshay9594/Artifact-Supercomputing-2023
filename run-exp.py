@@ -188,7 +188,7 @@ def run_exp_amgmk(base_path,opt_code_path,iters,f):
     
     f.write("\n(b) For the kernel:\n")
     f.write("->Average baseline kernel execution time="+ str(loop_time)+ " s\n")
-    f.write("->Baselinekernel execution time Variation="+ str(loop_time_var)+" %\n\n")    
+    f.write("->Baseline kernel execution time Variation="+ str(loop_time_var)+" %\n\n")    
     f.write("->Average kernel execution time of Cetus Parallelized Code (with technique applied)="+str(opt_loop_time)+" s\n")
     f.write("->Optimized kernel code execution time Variation="+ str(opt_loop_time_var)+" %\n")
     knl_speedup = loop_time/opt_loop_time
@@ -360,7 +360,7 @@ elif(val == '2'):
 
     with open('output.txt', 'w') as f:
         f.write(head_String)
-        f.write('\t*Note:\n 1. Input Class D not included since it takes about 2 to 3 hours to complete\n*')
+        f.write('\t***Note: Input Class D not included since it takes about 2 to 3 hours to complete***\n\n')
 
         if(ans == 'yes'):
             input_classes = ['A', 'B', 'C']
