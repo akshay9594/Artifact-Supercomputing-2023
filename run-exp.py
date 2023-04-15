@@ -1,10 +1,8 @@
 import matplotlib.pylab as plt
 
-import pandas as pd
-
 from subprocess import Popen,PIPE
 
-import sys,re
+import re
 
 import os
 
@@ -15,14 +13,14 @@ print("\n***********************************************************************
 
 
 
-def plot_data(plot_data_dict, plot_title):
+def plot_data(plot_data_dict, plot_title,xlabel,ylabel):
     plot_data_list = plot_data_dict.items()
     plot_data_list = sorted(plot_data_list) 
     x, y = zip(*plot_data_list) 
 
     plt.bar(x, y)
-    plt.xlabel('Input Matrices')
-    plt.ylabel('Performance Improvement')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.title(plot_title)          
     plt.show()
     
@@ -171,13 +169,11 @@ def run_exp_amgmk(base_path,opt_code_path,iters,f):
     f.write("->Kernel Speedup=" + str(knl_speedup)+"\n")
     f.write("->Cores used=" + str(cores)+"\n")
 
-    return app_speedup,knl_speedup
+    return app_speedup,knl_speedup,cores
 
 
 #Running the experiment with the UA benchmark
-def run_exp_UA(baseline,base_path,opt_code_path,input_class,iters):
-
-    print("\nCompiling and Running the codes", iters,"times and displaying the execution time...")
+def run_exp_UA(baseline,base_path,opt_code_path,input_class,iters,f):
 
     #Change pth to the appropriate directory which has the baseline code
     if(baseline == '1'):
@@ -191,8 +187,7 @@ def run_exp_UA(baseline,base_path,opt_code_path,input_class,iters):
     compile_UA(baseline,compile_path,input_class)
     avg_base_time,cores = execute_UA(exec_path,input_class,iters)
 
-    print("\n----------------------Timing Results for the Transf routine in UA------------------------\n")
-    print("->Average baseline subroutine execution time=", avg_base_time, " s")
+    f.write("->Average baseline subroutine execution time="+str(avg_base_time)+ " s\n")
     
     #Clean the baseline object files
     os.chdir(compile_path)
@@ -206,13 +201,17 @@ def run_exp_UA(baseline,base_path,opt_code_path,input_class,iters):
     compile_UA(baseline,compile_path,input_class)
     avg_opt_time,cores = execute_UA(exec_path,input_class,iters) 
     
-    print("->Average subroutine execution time of Cetus Parallelized Code (with technique applied)=", avg_opt_time, " s")
-    print("->Subroutine Speedup=",avg_base_time/avg_opt_time)
-    print("->Cores used=",cores)
+    subroutine_speedup = avg_base_time/avg_opt_time
+
+    f.write("->Average subroutine execution time of Cetus Parallelized Code (with technique applied) = "+str(avg_opt_time)+" s\n")
+    f.write("->Subroutine Speedup = "+str(subroutine_speedup)+"\n")
+    f.write("->Cores used = "+str(cores)+"\n")
 
     #Clean the optimized code object files
     os.chdir(compile_path)
     Popen(['make','clean'],stdout=PIPE,stderr=PIPE)
+
+    return subroutine_speedup,cores
 
 
 
@@ -257,7 +256,7 @@ if(val == '1'):
     #Open a text file to write the results
     with open('output.txt', 'w') as f:
         f.write(head_String)
-    #If the user wants to run the experiment for all the input files
+        #If the user wants to run the experiment for all the input files
         if(ans == 'yes'):
             for i in range(1,6):
                 input_matrix = 'MATRIX'+ str(i)
@@ -270,26 +269,27 @@ if(val == '1'):
                 Technique_Applied_path = opt_code_path + input_matrix
 
                 #Run the experiment and gather the application and kernel speedups
-                app_speedup,knl_speedup = run_exp_amgmk(compile_path,Technique_Applied_path,iters,f)
+                app_speedup,knl_speedup,num_cores = run_exp_amgmk(compile_path,Technique_Applied_path,iters,f)
                 application_speedups[input_matrix] = app_speedup
                 kernel_speedups[input_matrix] = knl_speedup
                 f.write("------------------------------------------------------------------------------------------------------\n")
           
            #Plot the Speedup data for the input matrices
             if(baseline == '1'):
-                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Serial)'
-                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Serial)'
+                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Serial) on' +num_cores+' cores'
+                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Serial) on' +num_cores+' cores'
             else:
-                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Technique NOT Applied)'
-                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Technique NOT Applied)'
+                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Technique NOT Applied) on' +num_cores+' cores'
+                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Technique NOT Applied) on' +num_cores+' cores'
             
-            plot_data(application_speedups,plt_app_title)
-            plot_data(kernel_speedups,plt_kernel_title)
+            xlabel = 'Input Matrices'
+            ylabel = 'Performance Improvement'
 
-            print("Experiment completed successfully! Results have been written to output.txt")
+            plot_data(application_speedups,plt_app_title,xlabel,ylabel)
+            plot_data(kernel_speedups,plt_kernel_title,xlabel,ylabel)
 
-    #If the user wants to run the experiment for a specific input matrix
-    #The speedup in this case is not plotted
+        #If the user wants to run the experiment for a specific input matrix
+        #The speedup in this case is not plotted
         elif(ans == 'no'):
             mat_num = input("\n->Enter the number of the matrix from 1 to 5 to use as input:")
             input_matrix = 'MATRIX' + str(mat_num)
@@ -307,43 +307,66 @@ if(val == '1'):
             print("Invalid Input")
             exit()
 
+        print("Experiment completed successfully! Results have been written to output.txt")
+
 elif(val == '2'):
     print("{UA-NAS selected for evaluation}")
 
     input_class = ''
     baseline = select_baseline()
-    ans = input("\t->Do you want to run the experiment for all input matrices?yes or no\n")
+    ans = input("\t->Do you want to run the experiment for all input classes?yes or no\n")
 
     base_path = ''
     root = os.getcwd()
+
+    if(baseline == '1'):
+        base_path = root+'/UA-NAS/Baselines/Serial/'
+            
+    elif(baseline == '2'):
+        base_path = root+'/UA-NAS/Baselines/Cetus-Output-WithoutSubSub/'
+    
     opt_code_path = root+'/UA-NAS/Technique_Applied/'
 
+    iters = int(input("\t->Specify the number of application runs:\n"))
+    head_String = "\n=========================Timing Results for the transf routine from the UA benchmark(Average of "+ str(iters)+" runs)===============================\n\n"
 
-    print("\n========================= Producing the results ===================================\n")
+    with open('output.txt', 'w') as f:
+        f.write(head_String)
 
-    if(ans == 'yes'):
-        input_classes = ['CLASS=A', 'CLASS=B', 'CLASS=C', 'CLASS=D']
-        for cl in input_classes:
-            print(cl)
+        if(ans == 'yes'):
+            input_classes = ['A', 'B']
+            count = 1
+            speedups = {}
+            for cl in input_classes:
+                f.write(str(count)+". For Input Class: "+cl+"\n")
+                opt_code_for_class = opt_code_path + 'CLASS-'+cl
+                subroutine_speedup,num_cores = run_exp_UA(baseline,base_path,opt_code_for_class,cl,iters,f)
+                speedups['Class '+cl] = subroutine_speedup
+                count = count + 1
+                f.write("------------------------------------------------------------------------------------------------------\n")
 
-    elif(ans == 'no'):
-        input_class = input("Enter the Input Class (A,B,C or D) to use:")
+         #Plot the Speedup data for the input matrices
+            if(baseline == '1'):
+                plt_title = 'Performance improvement of the transf routine (Technique Applied v/s Serial) on '+num_cores+' cores'
+            else:
+                plt_title = 'Performance improvement of the transf routine (Technique Applied v/s Technique NOT Applied) on '+num_cores+' cores'
 
-        if(baseline == '1'):
-            base_path = root+'/UA-NAS/Baselines/Serial/'
-            
-        elif(baseline == '2'):
-            base_path = root+'/UA-NAS/Baselines/Cetus-Output-WithoutSubSub/'
-        
-        iters = 3
-        opt_code_path += 'CLASS-'+input_class
+            xlabel = 'Input Classes'
+            ylabel = 'Performance Improvement'
 
-        run_exp_UA(baseline,base_path,opt_code_path,input_class,iters)
+            plot_data(speedups,plt_title,xlabel,ylabel)
+        elif(ans == 'no'):
+            input_class = input("Enter the Input Class (A,B,C or D) to use:")
+            opt_code_path += 'CLASS-'+input_class
 
-        os.chdir(root)
-    else:
-        print("Invalid Input")
-        exit()
+            subroutine_speedup = run_exp_UA(baseline,base_path,opt_code_path,input_class,iters,f)
+
+            os.chdir(root)
+        else:
+            print("Invalid Input")
+            exit()
+
+    print("Experiment completed successfully! Results have been written to output.txt")
 
 else:
     print("Invalid input")
