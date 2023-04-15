@@ -2,7 +2,7 @@ import matplotlib.pylab as plt
 
 from subprocess import Popen,PIPE
 
-import re
+import re,math
 
 import os
 
@@ -23,7 +23,19 @@ def plot_data(plot_data_dict, plot_title,xlabel,ylabel):
     plt.ylabel(ylabel)
     plt.title(plot_title)          
     plt.show()
-    
+
+
+def calculate_variation(values_list, mean):
+
+    sum_of_squares = 0.0
+
+    for val in values_list:
+        sum_of_squares += (val - mean)**2 
+
+    standard_dev = math.sqrt(sum_of_squares/len(values_list))
+    percent_dev = (100*standard_dev)/mean 
+    return percent_dev
+
 def compile_amgmk(base_path):
     os.chdir(base_path)
     make_result = Popen('make',stdout=PIPE,stderr=PIPE)
@@ -92,8 +104,14 @@ def execute_amgmk(iters):
     for i in range(0,len(loop_times)):
         loop_time_sum += loop_times[i]
 
+    app_time_avg = app_time_sum/iters
+    loop_time_avg = loop_time_sum/iters
+
+    percent_app_time_var = calculate_variation(app_times,app_time_avg)
+    percent_loop_time_var = calculate_variation(loop_times,loop_time_avg)
+
     Popen(['make','clean'],stdout=PIPE,stderr=PIPE)
-    return (app_time_sum/iters,loop_time_sum/iters,cores)
+    return (app_time_avg,percent_app_time_var,loop_time_avg,percent_loop_time_var,cores)
 
 #Executing the UA application
 def execute_UA(exec_path,input_class,iters):
@@ -121,7 +139,11 @@ def execute_UA(exec_path,input_class,iters):
     for i in range(0,len(transf_times)):
         transf_time_sum += transf_times[i]
    
-    return (transf_time_sum/iters,cores)
+    mean = transf_time_sum/iters
+
+    percent_var = calculate_variation(transf_times,mean)
+
+    return (mean,percent_var,cores)
 
 
 #Selecting the base line:
@@ -130,7 +152,7 @@ def execute_UA(exec_path,input_class,iters):
 #(2) The Cetus output code (Without subscripted subscript analysis of the technique applied)
 def select_baseline():
 
-    baseline = input("\n\t1.Serial\n\t2.Cetus-Output-WithoutSubSub\n\t->Select the baseline for comparison:\n")
+    baseline = input("\n\t1.Serial\n\t2.Cetus-Output-WithoutSubSub (Takes substantial run-time)\n\t->Select the baseline for comparison:\n")
     if(baseline == '1'):
         print("{Serial baseline selected}\n")
     elif(baseline == '2'):
@@ -148,23 +170,27 @@ def run_exp_amgmk(base_path,opt_code_path,iters,f):
     #Compile the baseline code
     compile_amgmk(base_path)
     #Execute the baseline code
-    app_time,loop_time,cores = execute_amgmk(iters)
+    app_time,app_time_var,loop_time,loop_time_var,cores = execute_amgmk(iters)
       
     #Compile the optimized code
     compile_amgmk(opt_code_path)
     #Execute the optimized code
-    opt_app_time,opt_loop_time,cores = execute_amgmk(iters)
+    opt_app_time,opt_app_time_var,opt_loop_time,opt_loop_time_var,cores = execute_amgmk(iters)
 
     #Write the absolute numbers to the output text file
     f.write("(a) For the Application:\n")
     f.write("->Average baseline application execution time="+ str(app_time)+" s\n")
+    f.write("->Baseline application execution time Variation="+ str(app_time_var)+" %\n\n")
     f.write("->Average application execution time of Cetus Parallelized Code (with technique applied)="+ str(opt_app_time)+ " s\n")
+    f.write("->Optimized application code execution time Variation="+ str(opt_app_time_var)+" %\n")
     app_speedup = app_time/opt_app_time
     f.write("->Application Speedup="+str(app_speedup)+"\n")
     
     f.write("\n(b) For the kernel:\n")
-    f.write("->Average baseline kernel execution time="+ str(loop_time)+ " s\n")    
+    f.write("->Average baseline kernel execution time="+ str(loop_time)+ " s\n")
+    f.write("->Baselinekernel execution time Variation="+ str(loop_time_var)+" %\n\n")    
     f.write("->Average kernel execution time of Cetus Parallelized Code (with technique applied)="+str(opt_loop_time)+" s\n")
+    f.write("->Optimized kernel code execution time Variation="+ str(opt_loop_time_var)+" %\n")
     knl_speedup = loop_time/opt_loop_time
     f.write("->Kernel Speedup=" + str(knl_speedup)+"\n")
     f.write("->Cores used=" + str(cores)+"\n")
@@ -185,9 +211,10 @@ def run_exp_UA(baseline,base_path,opt_code_path,input_class,iters,f):
 
     #Compile and execute the baseline code
     compile_UA(baseline,compile_path,input_class)
-    avg_base_time,cores = execute_UA(exec_path,input_class,iters)
+    avg_base_time,variation,cores = execute_UA(exec_path,input_class,iters)
 
     f.write("->Average baseline subroutine execution time="+str(avg_base_time)+ " s\n")
+    f.write("->Baseline Execution time variation="+str(variation)+ " %\n")
     
     #Clean the baseline object files
     os.chdir(compile_path)
@@ -199,11 +226,12 @@ def run_exp_UA(baseline,base_path,opt_code_path,input_class,iters,f):
 
     #Compile and execute the code
     compile_UA(baseline,compile_path,input_class)
-    avg_opt_time,cores = execute_UA(exec_path,input_class,iters) 
+    avg_opt_time,variation,cores = execute_UA(exec_path,input_class,iters) 
     
     subroutine_speedup = avg_base_time/avg_opt_time
 
     f.write("->Average subroutine execution time of Cetus Parallelized Code (with technique applied) = "+str(avg_opt_time)+" s\n")
+    f.write("->Optimized Code Execution time variation="+str(variation)+ " %\n")
     f.write("->Subroutine Speedup = "+str(subroutine_speedup)+"\n")
     f.write("->Cores used = "+str(cores)+"\n")
 
@@ -276,11 +304,11 @@ if(val == '1'):
           
            #Plot the Speedup data for the input matrices
             if(baseline == '1'):
-                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Serial) on' +num_cores+' cores'
-                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Serial) on' +num_cores+' cores'
+                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Serial) on ' +str(num_cores)+' cores'
+                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Serial) on ' +str(num_cores)+' cores'
             else:
-                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Technique NOT Applied) on' +num_cores+' cores'
-                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Technique NOT Applied) on' +num_cores+' cores'
+                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Technique NOT Applied) on ' +str(num_cores)+' cores'
+                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Technique NOT Applied) on ' +str(num_cores)+' cores'
             
             xlabel = 'Input Matrices'
             ylabel = 'Performance Improvement'
@@ -302,11 +330,11 @@ if(val == '1'):
             application_speedups[input_matrix] = app_speedup
             kernel_speedups[input_matrix] = kernel_speedup
 
-            os.chdir(root)
         else:
             print("Invalid Input")
             exit()
 
+        os.chdir(root)
         print("Experiment completed successfully! Results have been written to output.txt")
 
 elif(val == '2'):
@@ -332,9 +360,10 @@ elif(val == '2'):
 
     with open('output.txt', 'w') as f:
         f.write(head_String)
+        f.write('\t*Note:\n 1. Input Class D not included since it takes about 2 to 3 hours to complete\n*')
 
         if(ans == 'yes'):
-            input_classes = ['A', 'B']
+            input_classes = ['A', 'B', 'C']
             count = 1
             speedups = {}
             for cl in input_classes:
@@ -347,25 +376,26 @@ elif(val == '2'):
 
          #Plot the Speedup data for the input matrices
             if(baseline == '1'):
-                plt_title = 'Performance improvement of the transf routine (Technique Applied v/s Serial) on '+num_cores+' cores'
+                plt_title = 'Performance improvement of the transf routine (Technique Applied v/s Serial) on '+str(num_cores)+' cores'
             else:
-                plt_title = 'Performance improvement of the transf routine (Technique Applied v/s Technique NOT Applied) on '+num_cores+' cores'
+                plt_title = 'Performance improvement of the transf routine (Technique Applied v/s Technique NOT Applied) on '+str(num_cores)+' cores'
 
             xlabel = 'Input Classes'
             ylabel = 'Performance Improvement'
 
             plot_data(speedups,plt_title,xlabel,ylabel)
+
         elif(ans == 'no'):
             input_class = input("Enter the Input Class (A,B,C or D) to use:")
             opt_code_path += 'CLASS-'+input_class
 
             subroutine_speedup = run_exp_UA(baseline,base_path,opt_code_path,input_class,iters,f)
 
-            os.chdir(root)
         else:
             print("Invalid Input")
             exit()
 
+    os.chdir(root)
     print("Experiment completed successfully! Results have been written to output.txt")
 
 else:
