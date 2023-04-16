@@ -14,7 +14,7 @@ from os.path import exists
 print("Cetus Translation for UA NPB3.3.1 ...")
 
 base_path = os.getcwd() 
-Cetus_path = '~/Artifact-Supercomputing-2023/Cetus-Subscripted-Subscript_impl/bin/cetus'
+Cetus_path = '../../../../Cetus-Subscripted-Subscript_impl/bin/cetus'
 
 if(exists('npbparams.h') is False):
     print("Missing Input file: npbparams.h, first build the benchmark by typing 'make CLASS=A/B/C/D'")

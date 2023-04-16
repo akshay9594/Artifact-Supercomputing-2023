@@ -35,7 +35,8 @@
 #include "headers.h"
 #include <assert.h>
 #include <stdlib.h>
-#include <omp.h>
+//#include <omp.h>
+#include <sys/time.h>
 
 /*--------------------------------------------------------------------------
  * hypre_CSRMatrixMatvec
@@ -137,6 +138,7 @@ hypre_CSRMatrixMatvec( double           alpha,
 
    int adiag;
    int irownnz;
+   struct timeval start, end;
 
    irownnz = 0;
    for (i=0; i < num_rows; i++)
@@ -153,7 +155,9 @@ hypre_CSRMatrixMatvec( double           alpha,
   
 /* use rownnz pointer to do the A*x multiplication  when num_rownnz is smaller than num_rows */
 
-t0 = omp_get_wtime();
+//t0 = omp_get_wtime();
+gettimeofday(&start,NULL);
+
     if (num_rownnz < xpar*(num_rows))
     {
       
@@ -209,9 +213,13 @@ t0 = omp_get_wtime();
       }
    }
 
-   t1 = omp_get_wtime();
+    gettimeofday(&end, NULL); 
+	
+   time_array[id] += (end.tv_sec + (double)end.tv_usec/1000000) - (start.tv_sec + (double)start.tv_usec/1000000);
+  
+   //t1 = omp_get_wtime();
 
-   time_array[id] = t1-t0;
+   //time_array[id] = t1-t0;
   
    /*-----------------------------------------------------------------
     * y = alpha*y

@@ -77,7 +77,7 @@ def execute_amgmk(iters):
     app_times = []
     loop_times = []
 
-    cores = 0
+    threads = 0
     for i in range(0,iters):
         exec_result = Popen('./AMGMk',stdout=PIPE,stderr=PIPE)
         output, err_val = exec_result.communicate()
@@ -95,7 +95,7 @@ def execute_amgmk(iters):
 
             if(i == 0):
                 search = re.search('max_num_threads =(.*)', output)
-                cores = [int(s) for s in re.findall(r'\b\d+\b', search.group(1))].pop()
+                threads = [int(s) for s in re.findall(r'\b\d+\b', search.group(1))].pop()
             
     app_time_sum = 0.0
     for i in range(0,len(app_times)):
@@ -111,7 +111,7 @@ def execute_amgmk(iters):
     percent_loop_time_var = calculate_variation(loop_times,loop_time_avg)
 
     Popen(['make','clean'],stdout=PIPE,stderr=PIPE)
-    return (app_time_avg,percent_app_time_var,loop_time_avg,percent_loop_time_var,cores)
+    return (app_time_avg,percent_app_time_var,loop_time_avg,percent_loop_time_var,threads)
 
 #Executing the UA application
 def execute_UA(exec_path,input_class,iters):
@@ -119,7 +119,7 @@ def execute_UA(exec_path,input_class,iters):
     os.chdir(exec_path)
 
     exec_command = './ua.'+input_class+'.x'
-    cores = 0
+    threads = 0
     for i in range(0,iters):
         exec_result = Popen(exec_command,stdout=PIPE,stderr=PIPE)
         output, err_val = exec_result.communicate()
@@ -133,7 +133,7 @@ def execute_UA(exec_path,input_class,iters):
 
             if(i == 0):
                 search = re.search('max_num_threads =(.*)', output)
-                cores = [int(s) for s in re.findall(r'\b\d+\b', search.group(1))].pop()
+                threads = [int(s) for s in re.findall(r'\b\d+\b', search.group(1))].pop()
             
     transf_time_sum = 0.0
     for i in range(0,len(transf_times)):
@@ -143,7 +143,7 @@ def execute_UA(exec_path,input_class,iters):
 
     percent_var = calculate_variation(transf_times,mean)
 
-    return (mean,percent_var,cores)
+    return (mean,percent_var,threads)
 
 
 #Selecting the base line:
@@ -170,12 +170,12 @@ def run_exp_amgmk(base_path,opt_code_path,iters,f):
     #Compile the baseline code
     compile_amgmk(base_path)
     #Execute the baseline code
-    app_time,app_time_var,loop_time,loop_time_var,cores = execute_amgmk(iters)
+    app_time,app_time_var,loop_time,loop_time_var,threads = execute_amgmk(iters)
       
     #Compile the optimized code
     compile_amgmk(opt_code_path)
     #Execute the optimized code
-    opt_app_time,opt_app_time_var,opt_loop_time,opt_loop_time_var,cores = execute_amgmk(iters)
+    opt_app_time,opt_app_time_var,opt_loop_time,opt_loop_time_var,threads = execute_amgmk(iters)
 
     #Write the absolute numbers to the output text file
     f.write("(a) For the Application:\n")
@@ -193,9 +193,9 @@ def run_exp_amgmk(base_path,opt_code_path,iters,f):
     f.write("->Optimized kernel code execution time Variation="+ str(opt_loop_time_var)+" %\n")
     knl_speedup = loop_time/opt_loop_time
     f.write("->Kernel Speedup=" + str(knl_speedup)+"\n")
-    f.write("->Cores used=" + str(cores)+"\n")
+    f.write("->threads used=" + str(threads)+"\n")
 
-    return app_speedup,knl_speedup,cores
+    return app_speedup,knl_speedup,threads
 
 
 #Running the experiment with the UA benchmark
@@ -211,7 +211,7 @@ def run_exp_UA(baseline,base_path,opt_code_path,input_class,iters,f):
 
     #Compile and execute the baseline code
     compile_UA(baseline,compile_path,input_class)
-    avg_base_time,variation,cores = execute_UA(exec_path,input_class,iters)
+    avg_base_time,variation,threads = execute_UA(exec_path,input_class,iters)
 
     f.write("->Average baseline subroutine execution time="+str(avg_base_time)+ " s\n")
     f.write("->Baseline Execution time variation="+str(variation)+ " %\n")
@@ -226,20 +226,20 @@ def run_exp_UA(baseline,base_path,opt_code_path,input_class,iters,f):
 
     #Compile and execute the code
     compile_UA(baseline,compile_path,input_class)
-    avg_opt_time,variation,cores = execute_UA(exec_path,input_class,iters) 
+    avg_opt_time,variation,threads = execute_UA(exec_path,input_class,iters) 
     
     subroutine_speedup = avg_base_time/avg_opt_time
 
     f.write("->Average subroutine execution time of Cetus Parallelized Code (with technique applied) = "+str(avg_opt_time)+" s\n")
     f.write("->Optimized Code Execution time variation="+str(variation)+ " %\n")
     f.write("->Subroutine Speedup = "+str(subroutine_speedup)+"\n")
-    f.write("->Cores used = "+str(cores)+"\n")
+    f.write("->threads used = "+str(threads)+"\n")
 
     #Clean the optimized code object files
     os.chdir(compile_path)
     Popen(['make','clean'],stdout=PIPE,stderr=PIPE)
 
-    return subroutine_speedup,cores
+    return subroutine_speedup,threads
 
 
 
@@ -297,18 +297,18 @@ if(val == '1'):
                 Technique_Applied_path = opt_code_path + input_matrix
 
                 #Run the experiment and gather the application and kernel speedups
-                app_speedup,knl_speedup,num_cores = run_exp_amgmk(compile_path,Technique_Applied_path,iters,f)
+                app_speedup,knl_speedup,num_threads = run_exp_amgmk(compile_path,Technique_Applied_path,iters,f)
                 application_speedups[input_matrix] = app_speedup
                 kernel_speedups[input_matrix] = knl_speedup
                 f.write("------------------------------------------------------------------------------------------------------\n")
           
            #Plot the Speedup data for the input matrices
             if(baseline == '1'):
-                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Serial) on ' +str(num_cores)+' cores'
-                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Serial) on ' +str(num_cores)+' cores'
+                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Serial) on ' +str(num_threads)+' threads'
+                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Serial) on ' +str(num_threads)+' threads'
             else:
-                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Technique NOT Applied) on ' +str(num_cores)+' cores'
-                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Technique NOT Applied) on ' +str(num_cores)+' cores'
+                plt_app_title = 'Performance improvement of the parallel application (Technique Applied v/s Technique NOT Applied) on ' +str(num_threads)+' threads'
+                plt_kernel_title = 'Performance improvement of the parallel kernel (Technique Applied v/s Technique NOT Applied) on ' +str(num_threads)+' threads'
             
             xlabel = 'Input Matrices'
             ylabel = 'Performance Improvement'
@@ -325,7 +325,7 @@ if(val == '1'):
 
             base_path += input_matrix
             opt_code_path += input_matrix
-            app_speedup,kernel_speedup = run_exp_amgmk(base_path,opt_code_path,iters,f)
+            app_speedup,kernel_speedup,num_threads = run_exp_amgmk(base_path,opt_code_path,iters,f)
 
             application_speedups[input_matrix] = app_speedup
             kernel_speedups[input_matrix] = kernel_speedup
@@ -369,16 +369,16 @@ elif(val == '2'):
             for cl in input_classes:
                 f.write(str(count)+". For Input Class: "+cl+"\n")
                 opt_code_for_class = opt_code_path + 'CLASS-'+cl
-                subroutine_speedup,num_cores = run_exp_UA(baseline,base_path,opt_code_for_class,cl,iters,f)
+                subroutine_speedup,num_threads = run_exp_UA(baseline,base_path,opt_code_for_class,cl,iters,f)
                 speedups['Class '+cl] = subroutine_speedup
                 count = count + 1
                 f.write("------------------------------------------------------------------------------------------------------\n")
 
          #Plot the Speedup data for the input matrices
             if(baseline == '1'):
-                plt_title = 'Performance improvement of the transf routine (Technique Applied v/s Serial) on '+str(num_cores)+' cores'
+                plt_title = 'Performance improvement of the transf routine (Technique Applied v/s Serial) on '+str(num_threads)+' threads'
             else:
-                plt_title = 'Performance improvement of the transf routine (Technique Applied v/s Technique NOT Applied) on '+str(num_cores)+' cores'
+                plt_title = 'Performance improvement of the transf routine (Technique Applied v/s Technique NOT Applied) on '+str(num_threads)+' threads'
 
             xlabel = 'Input Classes'
             ylabel = 'Performance Improvement'

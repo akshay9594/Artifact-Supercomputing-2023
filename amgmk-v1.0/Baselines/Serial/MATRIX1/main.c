@@ -11,8 +11,8 @@
 //--------------
 #include <stdio.h>
 #include <stdlib.h>
-#include <omp.h>
-
+//#include <omp.h>
+#include <sys/time.h>
 #include "headers.h"
 
 
@@ -41,16 +41,9 @@ int main(int argc, char *argv[])
   printf("// \n");
   printf("//------------ \n");
 
- 
-  #pragma omp parallel
-     #pragma omp master
-        max_num_threads = omp_get_num_threads();
-   printf("\nmax_num_threads = %d \n\n",max_num_threads );
-
    printf("\n testIter   = %d \n\n", testIter );  
 
-  t0 = omp_get_wtime();
-
+  //t0 = omp_get_wtime();
 
   // Matvec
   totalWallTime = 0.0;
@@ -67,8 +60,8 @@ int main(int argc, char *argv[])
 
   printf("\nWall time = %f seconds. \n", totalWallTime);
    printf("Target loop time=%f seconds\n", total_target_loop_time);
-
-
+  max_num_threads = 1;
+  printf("max_num_threads =%d\n",max_num_threads);
   // // Relax
   // totalWallTime = 0.0;
 
@@ -111,8 +104,11 @@ int main(int argc, char *argv[])
 
 void test_Matvec()
 {
-  double t0 = 0.0,
-         t1 = 0.0;
+  // double t0 = 0.0,
+  //        t1 = 0.0;
+  struct timeval start, end;
+
+  double sum = 0.0;
 
   hypre_CSRMatrix *A;
   hypre_Vector *x, *y, *sol;
@@ -139,12 +135,17 @@ void test_Matvec()
   hypre_SeqVectorSetConstantValues(x,1);
   hypre_SeqVectorSetConstantValues(y,0);
 
-t0 = omp_get_wtime();
+gettimeofday(&start,NULL);
+//t0 = omp_get_wtime();
   for (i=0; i<testIter; ++i)
       hypre_CSRMatrixMatvec(1,A,x,0,y, time_array,i);
-  t1 = omp_get_wtime() ;
+//t1 = omp_get_wtime() ;
 
-  totalWallTime += t1 - t0;
+  gettimeofday(&end, NULL); 
+	
+  totalWallTime += (end.tv_sec + (double)end.tv_usec/1000000) - (start.tv_sec + (double)start.tv_usec/1000000);
+
+  //totalWallTime += t1 - t0;
 
   for(i=0; i<testIter; i++){
     total_target_loop_time += time_array[i];
@@ -172,8 +173,7 @@ t0 = omp_get_wtime();
 
 void test_Relax()
 {
-  double t0 = 0.0,
-         t1 = 0.0;
+ struct timeval start, end;
 
   hypre_CSRMatrix *A;
   hypre_Vector *x, *y, *sol;
@@ -196,12 +196,15 @@ void test_Relax()
 
   hypre_SeqVectorSetConstantValues(x,1);
 
-  t0 = omp_get_wtime();
+  gettimeofday(&start,NULL);
+  //t0 = omp_get_wtime();
   for (i=0; i<testIter; ++i)
       hypre_BoomerAMGSeqRelax(A, sol, x);
-  t1 = omp_get_wtime();
+  //t1 = omp_get_wtime();
 
-  totalWallTime += t1 - t0;
+   gettimeofday(&end, NULL); 
+	
+  totalWallTime += (end.tv_sec + (double)end.tv_usec/1000000) - (start.tv_sec + (double)start.tv_usec/1000000);
 
   x_data = hypre_VectorData(x);
   error = 0;
@@ -223,9 +226,10 @@ void test_Relax()
 
 void test_Axpy()
 {
-  double t0 = 0.0,
-         t1 = 0.0;
+  // double t0 = 0.0,
+  //        t1 = 0.0;
 
+  struct timeval start, end;
 
   hypre_Vector *x, *y;
   int nx, i;
@@ -245,11 +249,16 @@ void test_Axpy()
   hypre_SeqVectorSetConstantValues(y,1);
 
  
-  t0 = omp_get_wtime();
+  gettimeofday(&start, NULL);
+
+  //t0 = omp_get_wtime();
   for (i=0; i<testIter; ++i)
       hypre_SeqVectorAxpy(alpha,x,y);
-  t1 = omp_get_wtime();
+  //t1 = omp_get_wtime();
   
+  gettimeofday(&end, NULL); 
+	
+  totalWallTime += (end.tv_sec + (double)end.tv_usec/1000000) - (start.tv_sec + (double)start.tv_usec/1000000);
 
   y_data = hypre_VectorData(y);
   error = 0;
@@ -260,8 +269,6 @@ void test_Axpy()
   }
      
   if (error > 0) printf(" \n Axpy: error: %e\n", error);
-
-  totalWallTime += t1 - t0; 
 
   hypre_SeqVectorDestroy(x);
   hypre_SeqVectorDestroy(y);
