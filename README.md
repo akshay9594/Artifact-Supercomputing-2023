@@ -1,6 +1,6 @@
 # Artifact Description for the Evaluation of Subscripted Subscript Analysis
 
-[![DOI](https://zenodo.org/badge/626619497.svg)](https://zenodo.org/badge/latestdoi/626619497)
+[![DOI](https://zenodo.org/badge/626619497.svg)](https://doi.org/10.5281/zenodo.7838013)
 
 We have developed a new analysis technique for the automatic parallelization of subsripted
 subscript loops. The technique analyzes loops that define and/or modify the subscript array
