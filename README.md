@@ -1,7 +1,5 @@
 # Artifact Description for the Evaluation of Subscripted Subscript Analysis
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7838013.svg)](https://doi.org/10.5281/zenodo.7838013)
-
 We have developed a new analysis technique for the automatic parallelization of subsripted
 subscript loops. The technique analyzes loops that define and/or modify the subscript array
 and determines array properties, which is sufficient to parallelize a class of subscripted
@@ -151,13 +149,11 @@ only Serial Baseline source codes can be translated.
 To perform the sanity check follow the steps below
 
 ```
-1. Install the Cetus submodule as mentioned in "Obtaining the Codes"
-2. Navigate to the submodule root directory and run the build script : 
-    $./build.sh bin
-3. A Cetus executable will be generated and placed in the 'bin' folder.
-4. Navigate to the source code of the Serial Baseline to be translated:
-5. Run the script run-cetus.py:
+1. A cetus executable has been provided in the bin subdirectory of
+  'Cetus-Subscripted-Subscript_impl' parent directory.
+2. Navigate to the source code of the Serial Baseline to be translated:
+3. Run the script run-cetus.py:
     $python3 run-cetus.py
-6. A new directory 'cetus_output' is created within the same folder as run-cetus.py
+4. A new directory 'cetus_output' is created within the same folder as run-cetus.py
     and the translated files are placed inside this new directory.
 ```
