@@ -1,3 +1,0 @@
-Cetus run:
-
-./cetus -subsub_analysis -normalize-loops -alias=3 
