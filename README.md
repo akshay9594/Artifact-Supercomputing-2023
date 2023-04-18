@@ -114,10 +114,12 @@ codes) have been placed in the "Technique_Applied" directory for each benchmark.
      the master script generates a graph showing the performance improvements, 
      similar to the graphs presented in the Evaluation section.
 
-Note: The master script does not vary the number of cores for the experiment as shown in the
+Notes: 
+1.    The master script does not vary the number of cores for the experiment as shown in the
       results section of the Supercomputing paper. It uses the maximum available cores. The
       user will have to first set the number of cores to use before running the master
       script.
+
 
 ### Generated Results:
 
