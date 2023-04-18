@@ -1,6 +1,6 @@
 # Artifact Description for the Evaluation of Subscripted Subscript Analysis
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7838840.svg)](https://doi.org/10.5281/zenodo.7838840)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7842053.svg)](https://doi.org/10.5281/zenodo.7842053)
 
 We have developed a new analysis technique for the automatic parallelization of subsripted
 subscript loops. The technique analyzes loops that define and/or modify the subscript array
@@ -40,7 +40,9 @@ We observed an average run-to-run variation of 1.45% and we used one thread per 
  - Machine with Intel processors (Sky Lake and beyond)
 
 ## Obtaining the Codes
-The codes to reproduce the results can be obtained by cloning this repository using the commands-
+The codes can be obtained from Zenodo from the above mentioned DOI. (or)
+
+The codes can be obtained by cloning the git repository using the commands-
 ```
 cd $HOME or cd ~
 git clone (https://github.com/akshay9594/Artifact-Supercomputing-2023.git)
@@ -53,13 +55,6 @@ This repository contains the benchmark codes listed below:
 | Amgmk-v1.0  | CORAL Benchmark Codes | (https://asc.llnl.gov/coral-benchmarks)
 | UA-NAS | NAS Parallel Benchmarks | (https://github.com/akshay9594/SNU_NPB-1.0.3)
 
-Optionally we have included a Cetus submodule which can be used to translate source codes
-for sanity checks. To install the Cetus submodule after cloning this repo, run the 
-following command from the root of the repository:
-
-```
-git submodule update --init
-```
 
 ### Installing the Non built-in python packages
 The non built-in packages can be installed using the python package manager : pip3
@@ -86,6 +81,7 @@ The directory layout of this Artifact is as follows-
 │   │   └── Technique_Applied
 └── README.md
 └── requirements.txt
+└── run-exp.py
 ```
 ### Baseline and Optimized Codes
 - The experiments have two Baselines against which performance improvement is measured:
@@ -115,7 +111,8 @@ codes) have been placed in the "Technique_Applied" directory for each benchmark.
   4. Determine the number of runs (of the baseline code and the optimized application code) 
      to determine the average execution time.
   5. If the user chooses to run the experiment for all of the available inputs, 
-     the master script generates a graph showing the performance improvements, similar to the graphs presented in the Evaluation section.
+     the master script generates a graph showing the performance improvements, 
+     similar to the graphs presented in the Evaluation section.
 
 Note: The master script does not vary the number of cores for the experiment as shown in the
       results section of the Supercomputing paper. It uses the maximum available cores. The
@@ -142,13 +139,13 @@ Note: The master script does not vary the number of cores for the experiment as 
         5. Displays the number of threads used
 
 
-## Translating an input code through the Cetus submodule (Optional):
+## Translating an input code through the Cetus executable (Optional):
 
-A Cetus submodule has been provided which can be used to perform sanity checks ensuring that
+A Cetus executable has been provided which can be used to perform sanity checks ensuring that
 Cetus with subscripted subscript analysis enabled generates the expected output code. Note that
 only Serial Baseline source codes can be translated.
 
-To perform the sanity check follow the steps below
+To perform the sanity check follow the steps below:
 
 ```
 1. A cetus executable has been provided in the bin subdirectory of
