@@ -209,7 +209,7 @@ def run_exp_UA(baseline,base_path,opt_code_path,input_class,iters,f):
         compile_path = base_path + 'CLASS-'+input_class
         exec_path = compile_path
 
-    #Compile and execute the baseline code
+    # #Compile and execute the baseline code
     compile_UA(baseline,compile_path,input_class)
     avg_base_time,variation,threads = execute_UA(exec_path,input_class,iters)
 
@@ -217,7 +217,7 @@ def run_exp_UA(baseline,base_path,opt_code_path,input_class,iters,f):
     f.write("->Baseline Execution time variation="+str(variation)+ " %\n")
     
     #Clean the baseline object files
-    os.chdir(compile_path)
+    os.chdir(base_path)
     Popen(['make','clean'],stdout=PIPE,stderr=PIPE)
 
     #Change to the directory which has the optimized code (Parallel code with technique applied)
@@ -225,6 +225,7 @@ def run_exp_UA(baseline,base_path,opt_code_path,input_class,iters,f):
     exec_path = compile_path
 
     #Compile and execute the code
+    baseline = 'NULL'
     compile_UA(baseline,compile_path,input_class)
     avg_opt_time,variation,threads = execute_UA(exec_path,input_class,iters) 
     
@@ -343,6 +344,9 @@ elif(val == '2'):
     input_class = ''
     baseline = select_baseline()
     ans = input("\t->Do you want to run the experiment for all input classes?yes or no\n")
+    if(ans != 'yes' and ans != 'no'):
+        print("invalid input")
+        exit()
 
     base_path = ''
     root = os.getcwd()
